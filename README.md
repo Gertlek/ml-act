@@ -83,13 +83,13 @@ python -m act.scripts.pipeline \
 "task_params=giraffes" \
 "responses.batch_size=20" \
 "responses.max_batches=1" \
-"wandb.mode=disabled" \
 "text_generation.num_sentences=10" \
 "text_generation.new_seq_len=48" \
 "text_generation.strength_sample_size=3" \
-"intervention_params.incremental=atonce" \
-"device=cpu" \
-"model.dtype=float32"
+"intervention_params.incremental=incr" \
+"device=cuda:0" \
+"model.dtype=float32" \
+"results_dir=./results_dir_example_text_generation"
 ```
 
 This command will:
@@ -101,39 +101,6 @@ This command will:
 Note that we use [Hydra](https://hydra.cc/docs/intro/) as configuration and arguments manager.
 
 Results will be stored in `results_dir` (set in the config file or run with `results_dir=<your/results_dir/path>`). It will also upload them to `wandb` if you have [set it up](https://docs.wandb.ai/quickstart/). (more about wandb config for this project in `configs/wandb/act.yaml`). For task-specific evaluations (e.g., `rtp`, `text_generation`, `zero_shot`), modify the `evaluation` parameter in `text_generation.yaml` or `text_to_image_generation.yaml` or [override it](https://hydra.cc/docs/advanced/override_grammar/basic/) via the command line, and re-run the pipeline.
-
-### Running the pipeline for diffusion
-
-```bash
-python -m act.scripts.pipeline \
-    --config-name text_to_image_generation \
-    "task_params=coco_styles" \
-    "task_params.src_subsets=['none']" \
-    "task_params.dst_subsets=['art_nouveau']" \
-    "task_params.prompt_subset=['none']" \
-    "responses.batch_size=8" \
-    "responses.max_batches=64" \
-    "interventions.max_batches=null" \
-    "wandb.mode=disabled" \
-    "evaluation=['text-to-image-generation']" \
-    "text_to_image_generation.batch_size=1" \
-    "text_to_image_generation.max_batches=1" \
-    "text_to_image_generation.create_gif=true" \
-    "device=cuda"
-```
-
-Line by line:
-
-1. `--config-name text_to_image_generation` chooses the config file in `configs/text_to_image_generation.yaml`.
-2. `"task_params=coco_styles"` chooses the task `coco_styles` in `configs/task_params`
-3. `"task_params.src_subsets=['none']"` and `"task_params.dst_subsets=['art_nouveau']"` choose the source and destination datasets respectively.
-4. `"task_params.prompt_subset=['none']"` chooses the prompt dataset for inference time
-5. `"responses.batch_size=8"` and `"responses.max_batches=64"` extract 8 responses per batch and run 64 batches. (512 samples). We used 32 x 64 in the paper.
-6. `"interventions.max_batches=null"` will use all extrated responses to learn an intervention
-7. `"evaluation=['text-to-image-generation']"` after the intervention, it will generate images. You can also add `clip_score` here. 
-7. `"text_to_image_generation.create_gif=true"` this will save gif animations with the generated images at different strengths. The strengths used are configured in  `configs/text_to_image_generation.yaml` under `text_to_image_generation` with `min_strength`, `max_strength` and `strength_steps` (actual strengths will be a `np.linspace(min_strength, max_strength, strength_steps)`).
-
-Results will be stored in `results_dir` (set in the config file or run with `results_dir=<your/results_dir/path>`). It will also upload them to `wandb` if you have [set it up](https://docs.wandb.ai/quickstart/). (more about wandb config for this project in `configs/wandb/act.yaml`). In `results_dir/generate_with_hooks_diffusion/` you will find the generated images, with a folder for each strength value and guidance scale set up in `text_to_image_generation.yaml` in the format `{strength:.03f}_{guidance:.03f}/<image_id>.png`.
 
 ---
 
